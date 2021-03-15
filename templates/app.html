@@ -9,6 +9,7 @@
 	<link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 	<link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.2/css/all.css" rel="stylesheet">
 	<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.min.js"></script>
 	<style>
 		/*.fas {
 			margin-right: 7px;
@@ -39,7 +40,7 @@
 				<button class="btn btn-primary" id="file-submit" type="button">保存</button>
 				<div class="alert" role="alert" id="result"></div>
 			</form>
-			
+
 			<button class="btn" id="refresh" onclick="refresh()"><i class="fas fa-sync" aria-hidden="true"></i></button>
 			<div class="toolbar">
 			</div>
@@ -52,51 +53,16 @@
 					</li>
 				</ol>
 			</nav>
-			<table class="col-12">
-				<!--tr>
-					<th colspan="3">
-						<ol class="breadcrumb">
-							<li class="breadcrumb-item active" aria-current="page">
-								<a href="/app" title="根目录">
-									<i class="fas fa-folder"></i>
-								</a>
-							</li>
-						</ol>
-					</th>
-				</tr-->
-				<!--tr>
-					<th>Name</th>
-					<th>Size</th>
-					<th>Modified</th>
-				</tr-->
-				<tr>
-					<td class="file-item">
+			<div>
+				<div class="col-12 row">
+					<div class="file-item col-4">
 						<i class="fas fa-folder" aria-hidden="true"></i>
 						<a id='father'>..</a>
-					</td>
-				</tr>
-				{% for file in files %}
-				<tr>
-					<td class="file-item">
-						{% if file.type == 0 %}
-						<i class="fas fa-folder" aria-hidden="true"></i>
-
-						{% else %}
-						<i class="fas fa-file" aria-hidden="true"></i>
-						{% endif %}
-						<a {% if file.type==0 %}href="/app/{{file.path}}" {% endif %}>{{file.name}}</a>
-					</td>
-					<td class="file-size">
-						{% if file.type != 0 %}
-
-						{{ file.size }}
-
-						{% endif %}
-					</td>
-					<td>{{file.mtime}}</td>
-				</tr>
-				{% endfor %}
-			</table>
+					</div>
+				</div>
+			</div>
+			<div id="file-group">
+			</div>
 		</div>
 	</div>
 	<footer class="footer">
@@ -109,42 +75,85 @@
 	<script type="text/javascript">
 		function processFather() {
 			$("#father").attr("href", window.location.href.replace(/(.+)\/.+/g, '$1', 1));
+		}
+		function fixFileSize(size) {
+
+			if (size === '') return '';
+			if (size > 1024) {
+				if (size > 1024 * 1024) {
+					if (size > 1024 * 1024 * 1024) {
+						return Number(size / (1024 * 1024 * 1024)).toFixed(2) + 'G';
+					} else return Number(size / (1024 * 1024)).toFixed(2) + 'M';
+				}
+				else return Number(size / (1024)).toFixed(2) + 'K';
+			} else return size + 'B';
 
 		}
-		function fixFileSize() {
-			for (i = 0; i < $('.file-size').length; i++) {
-				size = $($('.file-size')[i]).text().trim()
-				if (size === '') continue;
-				if (size > 1024) {
-					if (size > 1024 * 1024) {
-						if (size > 1024 * 1024 * 1024) {
-							$($('.file-size')[i]).text(Number(size / (1024 * 1024 * 1024)).toFixed(2) + 'G');
-						} else $($('.file-size')[i]).text(Number(size / (1024 * 1024)).toFixed(2) + 'M');
-					}
-					else $($('.file-size')[i]).text(Number(size / (1024)).toFixed(2) + 'K');
-				} else $($('.file-size')[i]).text(size + 'B');
-			}
-		}
-		function refresh(){
+		function refresh() {
 			$.ajax({
-					url: window.location.href.replace('/app', '/api', 1),
-					type: 'get',
-					cache: false,
-					processData: false,
-					contentType: false,
-					success: function (data) {
-						console.log(data);
-						$("#result").text(JSON.stringify(data)).addClass("alert-success").removeClass("alert-danger");
-					},
-					error: function (err) {
-						alert('获取最新目录失败，请稍后重试。',err);
+				url: window.location.href.replace('/app', '/api/folder', 1),
+				type: 'get',
+				cache: false,
+				processData: false,
+				contentType: false,
+				success: function (data) {
+					console.log(data);
+					fileList = $(JSON.parse(data))[0].files;
+					$('#file-group').empty();
+					for (i = 0; i < fileList.length; i++) {
+						str = '<div class="col-12 row file mt-2 mb-2">\
+								<div class="file-item col-4">';
+						if (fileList[i].type == 0) str += '<i class="fas fa-folder" aria-hidden="true"></i> ';
+						else str += '<i class="fas fa-file" aria-hidden="true"></i>  ';
+						str += '<a';
+						if (fileList[i].type == 0) str += ' href="/app/' + fileList[i].path + '"';
+						str += '>' + fileList[i].name + '</a>\
+								</div>';
+						str += '<div class="file-size col-2">';
+						if (fileList[i].type != 0) str += fixFileSize(fileList[i].size);
+						str += '</div>';
+						str += '<div class="file-modified-time col-4">' + fileList[i].mtime + '</div>\
+							<div class="file float-right col-2">\
+								<button type="button" class="btn btn-primary" id="modalButton'+i+'" data-toggle="modal" data-target="#modal' + i + '">\
+								<i class="fas fa-pen" aria-hidden="true"></i></button>\
+								<div class="modal fade" id="modal'+ i +'" tabindex="-1" aria-labelledby="modalLabel'+ i +'" aria-hidden="true">\
+  								<div class="modal-dialog">\
+									<div class="modal-content">\
+									<div class="modal-header">\
+										<h5 class="modal-title" id="modalLabel'+ i +'">Rename</h5>\
+										<button type="button" class="close" data-dismiss="modal" aria-label="Close">\
+										<span aria-hidden="true">&times;</span>\
+										</button>\
+									</div>\
+									<div class="modal-body">\
+										<input type="text" class="form-control" filename="'+ fileList[i].name + '" id="filename'+i+'" value="'+fileList[i].name +'">\
+									</div>\
+									<div class="modal-footer">\
+										<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>\
+										<button type="button" class="btn btn-primary file-rename" id="file-rename'+i+'" filename="'+ fileList[i].name + '" >Save changes</button>\
+									</div>\
+									</div>\
+								</div>\
+								</div>\
+								<button class="btn btn-danger file-delete"\ filename="'+ fileList[i].name + '">\
+								<i class="fas fa-trash" aria-hidden="true"></i>\
+								</button></div>'
+
+						str += '</div>';
+						$('#file-group').append(str);
 					}
-				});
+					addMyEvent(fileList.length);
+				},
+				error: function (err) {
+					console.log('获取最新目录失败，请稍后重试。', err);
+				}
+			});
 		}
 
 		$(document).ready(function () {
 			processFather();
-			fixFileSize();
+			refresh();
+			//setInterval("refresh()",1000)
 		});
 
 
@@ -157,9 +166,40 @@
 				var data = new FormData();
 				data.append('file', files[0]);
 				$.ajax({
-					url: window.location.href.replace('/app', '/api', 1),
+					url: window.location.href.replace('/app', '/api/folder', 1),
 					type: 'POST',
 					data: data,
+					cache: false,
+					processData: false,
+					contentType: false,
+					success: function (data) {
+						console.log(data);
+						refresh();
+					},
+					error: function (err) {
+						console.error(err);
+						$("#result").html(err.responseText).removeClass("alert-success").addClass("alert-danger");
+					}
+				});
+			}
+		});
+
+		function addMyEvent(len) {
+			for (i=0;i<len;i++)
+			{
+				$('#modalButton'+ i).on('click', function () {
+					console.log($('#modal'+i))
+  					$('#modal'+i).modal('show')
+				})
+				$('#file-rename'+i).click(function () {
+					
+					console.log('src:'+$(this).attr('filename'))
+					console.log('dst:'+$('#filename').val())
+					$.ajax({
+					url: window.location.href.replace('/app', '/api/folder', 1),
+					type: 'PUT',
+					data: JSON.stringify({ src: $(this).attr('filename'),
+						dst: $(this).parent().siblings('.modal-body').children('input').val() }),
 					cache: false,
 					processData: false,
 					contentType: false,
@@ -171,10 +211,36 @@
 						console.error(err);
 						$("#result").html(err.responseText).removeClass("alert-success").addClass("alert-danger");
 					}
+					});
+					$(this).parents('.modal').modal('hide')
+					refresh()
 				});
-			}
-		});
+				
 
+			}
+			$('.file-delete').click(function () {
+				console.log('file-delete!')
+				console.log($(this).attr('filename'))
+				$.ajax({
+					url: window.location.href.replace('/app', '/api/folder', 1),
+					type: 'DELETE',
+					data: JSON.stringify({ src: $(this).attr('filename') }),
+					cache: false,
+					processData: false,
+					contentType: false,
+					success: function (data) {
+						console.log(data);
+						$("#result").text(JSON.stringify(data)).addClass("alert-success").removeClass("alert-danger");
+						refresh();
+					},
+					error: function (err) {
+						console.error(err);
+						$("#result").html(err.responseText).removeClass("alert-success").addClass("alert-danger");
+					}
+				});
+			});
+		}
 	</script>
 </body>
+
 </html>

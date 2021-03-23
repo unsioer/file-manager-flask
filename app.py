@@ -1,9 +1,6 @@
 # TODO:
-# - Move file or folder
 # - Strictly security test (eg: Known risk of deletion)
-# - rename Folder bug
 # - Normalize api
-# - Front-end UI design
 
 from flask import Flask, request, render_template
 import os
@@ -47,8 +44,10 @@ def upload(folderPath):
     joinPath = os.path.join(ROOT_DIR, folderPath)
     # TODO: os.path.exists
     file = request.files['file']
-    file.filename
-    file.save(os.path.join(joinPath, file.filename))
+    fullPath = os.path.join(joinPath, file.filename)
+    if os.path.exists(fullPath):
+        fullPath = nameConflict(fullPath)
+    file.save(fullPath)
     return json.dumps({"status": 200})
 
 
@@ -125,7 +124,7 @@ def mkdir(folderPath):
     dst = data.get('dst')
     if dst == None:
         return json.dumps({"status": 400, "msg": "No folder name given"})
-    if re.search('[\\\/:\?<>\.\*]',dst):
+    if re.search('[\\\/:\?<>\.\*]', dst):
         return json.dumps({"status": 403, "msg": "Illegal folder name"})
     fullPath = os.path.join(joinPath, dst)
     if not os.path.exists(fullPath):
@@ -138,6 +137,67 @@ def mkdir(folderPath):
 @app.route("/api/folder/new/", methods=['POST'])
 def mkdirRoot():
     return mkdir('')
+
+
+@app.route("/api/file/copy/<path:filePath>", methods=['PUT'])
+def copy(filePath):
+    fullPath = os.path.join(ROOT_DIR, filePath)
+    if not os.path.exists(fullPath):
+        return json.dumps({"status": 404, "msg": "File not found"})
+    data = json.loads(request.get_data())
+    if data == None:
+        return json.dumps({"status": 400, "msg": "No data given"})
+    dst = data.get('dst')
+    if dst == None:
+        return json.dumps({
+            "status": 400,
+            "msg": "No destination folder given"
+        })
+    if dst[0] == '/':
+        dst = dst[1:]
+    if re.search('[:\?<>\.\*]', dst):
+        return json.dumps({"status": 403, "msg": "Illegal folder name"})
+    dstPath = os.path.join(ROOT_DIR, dst, filePath)
+    print(fullPath, dstPath)
+    dstPath = nameConflict(dstPath)
+    print(fullPath, dstPath)
+    try:
+        if os.path.isdir(fullPath): shutil.copytree(fullPath, dstPath)
+        else: shutil.copy2(fullPath, dstPath)
+        return json.dumps({"status": 200})
+    except Exception as e:
+        return json.dumps({"status": 400, "msg": str(e)})
+
+
+@app.route("/api/file/move/<path:filePath>", methods=['PUT'])
+def move(filePath):
+    fullPath = os.path.join(ROOT_DIR, filePath)
+    if not os.path.exists(fullPath):
+        return json.dumps({"status": 404, "msg": "File not found"})
+    data = json.loads(request.get_data())
+    if data == None:
+        return json.dumps({"status": 400, "msg": "No data given"})
+    dst = data.get('dst')
+    if dst == None:
+        return json.dumps({
+            "status": 400,
+            "msg": "No destination folder given"
+        })
+    if dst[0] == '/':
+        dst = dst[1:]
+    if re.search('[:\?<>\.\*]', dst):
+        return json.dumps({"status": 403, "msg": "Illegal folder name"})
+    dstPath = os.path.join(ROOT_DIR, dst, filePath)
+    print(fullPath, dstPath)
+    dstPath = nameConflict(dstPath)
+    print(fullPath, dstPath)
+    try:
+        if not os.path.exists(os.path.join(ROOT_DIR, dst)):
+            os.makedirs(os.path.join(ROOT_DIR, dst))
+        shutil.move(fullPath, dstPath)
+        return json.dumps({"status": 200})
+    except Exception as e:
+        return json.dumps({"status": 400, "msg": str(e)})
 
 
 # Front-end

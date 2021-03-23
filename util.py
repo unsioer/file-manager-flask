@@ -31,3 +31,24 @@ class File(object):
 
 def listFile(path: str) -> []:
     return [File(path, fileName) for fileName in os.listdir(path)]
+
+def nameConflict(path: str)->str:
+    if os.path.exists(path):
+        if os.path.isdir(path):
+            if not os.path.exists(path+' - 副本'):
+                path = path + ' - 副本'
+            else: 
+                index = 2
+                while os.path.exists(path+' - 副本 ('+str(index)+')'):
+                    index+=1
+                path = path + ' - 副本 ('+str(index)+')'
+        else:
+            if not os.path.exists(os.path.splitext(path)[0]+' - 副本'+os.path.splitext(path)[1]):
+                path = os.path.splitext(path)[0]+' - 副本'+os.path.splitext(path)[1]
+            else: 
+                index = 2
+                while os.path.exists(os.path.splitext(path)[0]+' - 副本 ('+str(index)+')'+os.path.splitext(path)[1]):
+                    index+=1
+                path = os.path.splitext(path)[0]+' - 副本 ('+str(index)+')'+os.path.splitext(path)[1]
+    return path
+

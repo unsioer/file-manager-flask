@@ -13,18 +13,6 @@
 	<script src="https://cdn.bootcdn.net/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.js"></script>
 	<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.min.js"></script>
 	<style>
-		/*.fas {
-			margin-right: 7px;
-    		margin-left: 7px;
-    		line-height: 22px;
-    		vertical-align: baseline;
-			vertical-align: middle;
-			display: table-cell;
-		}
-		.file-item {
-			text-align: center;
-			display: table;
-		}*/
 	</style>
 </head>
 
@@ -34,19 +22,17 @@
 			<a href="" class="nav navbar-brand"><b>Hence File Manager</b></a>
 		</div>
 	</nav>
-
 	<div class="jumbotron jumbotron-fluid">
 		<div class="container">
-			<div class="alert" role="alert" id="result"></div>
 			<nav>
-				<ol class="breadcrumb">
+				<ol class="breadcrumb row">
 					<li class="breadcrumb-item active" aria-current="page">
 						<a class="btn" href="/app" title="根目录">
-							<i class="fas fa-folder"></i><b></b>
+							<i class="fas fa-folder"></i>
 						</a>
 					</li>
 					<li>
-						<button class="btn" id="refresh" onclick="refresh()" title="刷新"><i class="fas fa-sync"
+						<button class="btn" id="refresh" onclick="refresh(true)" title="刷新"><i class="fas fa-sync"
 								aria-hidden="true"></i></button>
 					</li>
 					<li>
@@ -54,8 +40,11 @@
 								aria-hidden="true"></i></button>
 					</li>
 					<li>
-						<button class="btn" id="upload-modal-button" title="上传"><i class="fas fa-upload"
+						<button class="btn" id="upload-modal-button" title="上传"><i class="fas fa-file-upload"
 								aria-hidden="true"></i></button>
+					</li>
+					<li>
+
 					</li>
 				</ol>
 			</nav>
@@ -102,7 +91,7 @@
 				</div>
 			</form>
 			<div>
-				<div class="col-12 row">
+				<div class="row">
 					<div class="file-item col-4">
 						<i class="fas fa-folder" aria-hidden="true"></i>
 						<a id='father'>..</a>
@@ -111,6 +100,7 @@
 			</div>
 			<div id="file-group">
 			</div>
+			<div class="alert" role="alert" id="result"></div>
 		</div>
 	</div>
 	<footer class="footer">
@@ -148,7 +138,11 @@
 				$("#result").html(data.responseText).removeClass("alert-success").addClass("alert-danger");
 			}
 		}
-		function refresh() {
+		function emptySuccessAlert() {
+			$("#result").empty().removeClass('alert-success').removeClass('alert-danger');
+		}
+
+		function refresh(empty) {
 			$.ajax({
 				url: window.location.href.replace('/app', '/api/folder/basic', 1),
 				type: 'get',
@@ -160,7 +154,7 @@
 					fileList = $(JSON.parse(data))[0].files;
 					$('#file-group').empty();
 					for (i = 0; i < fileList.length; i++) {
-						str = '<div class="col-12 row file mt-2 mb-2">\
+						str = '<div class="row file mt-2 mb-2">\
 								<div class="file-item col-4">';
 						if (fileList[i].type == 0) str += '<i class="fas fa-folder" aria-hidden="true"></i> ';
 						else str += '<i class="fas fa-file" aria-hidden="true"></i>  ';
@@ -168,18 +162,64 @@
 						if (fileList[i].type == 0) str += ' href="/app/' + fileList[i].path + '"';
 						str += '>' + fileList[i].name + '</a>\
 								</div>';
-						str += '<div class="file-size col-2">';
+						str += '<div class="text-right col-8">';
 						if (fileList[i].type != 0) str += fixFileSize(fileList[i].size);
-						str += '</div>';
-						str += '<div class="file-modified-time col-4">' + fileList[i].mtime + '</div>\
-							<div class="file float-right col-2">\
-								<button type="button" class="btn btn-primary" id="rename-modal-button-'+ i + '" data-toggle="modal" data-target="#modal' + i + '">\
-								<i class="fas fa-pen" aria-hidden="true"></i></button>\
-								<div class="modal fade" id="modal'+ i + '" tabindex="-1" aria-labelledby="modalLabel' + i + '" aria-hidden="true">\
+						str += '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + fileList[i].mtime + '&nbsp;&nbsp;&nbsp;\
+								<button type="button" class="btn btn-outline-dark" id="copy-modal-button-'+ i + '" title="复制" data-toggle="modal" data-target="#modal-copy-' + i + '">\
+									<i class="fas fa-copy" aria-hidden="true"></i>\
+								</button>\
+								<button type="button" class="btn btn-outline-success" id="paste-modal-button-'+ i + '" title="移动" data-toggle="modal" data-target="#modal-move-' + i + '">\
+									<i class="fas fa-file-export"aria-hidden="true"></i>\
+								</button>\
+								<button type="button" class="btn btn-outline-primary" id="rename-modal-button-'+ i + '" title="重命名" data-toggle="modal" data-target="#modal-rename-' + i + '">\
+									<i class="fas fa-pen" aria-hidden="true"></i>\
+								</button>\
+								<button class="btn btn-outline-danger file-delete"\ filename="' + fileList[i].name + '" id="file-delete-' + i + '">\
+								<i class="fas fa-trash" aria-hidden="true"></i>\
+								</button>';
+						str += '<div class="modal fade copy-modal" id="modal-copy-' + i + '" tabindex="-1" aria-labelledby="copy-modal-label-' + i + '" aria-hidden="true">\
   								<div class="modal-dialog">\
 									<div class="modal-content">\
 									<div class="modal-header">\
-										<h5 class="modal-title" id="modalLabel'+ i + '">重命名</h5>\
+										<h5 class="modal-title" id="copy-modal-label-'+ i + '">复制到...</h5>\
+										<button type="button" class="close" data-dismiss="modal" aria-label="Close">\
+										<span aria-hidden="true">&times;</span>\
+										</button>\
+									</div>\
+									<div class="modal-body">\
+										<input type="text" class="form-control filename" filename="'+ fileList[i].name + '" id="copy-filename-' + i + '" value="' + window.location.href.replace(/.+\/app/i, '') + '">\
+									</div>\
+									<div class="modal-footer">\
+										<button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>\
+										<button type="button" class="btn btn-primary file-copy" id="file-copy-'+ i + '">保存</button>\
+									</div>\
+									</div>\
+								</div>\
+								</div>';
+						str += '<div class="modal fade move-modal" id="modal-move-' + i + '" tabindex="-1" aria-labelledby="move-modal-label-' + i + '" aria-hidden="true">\
+  								<div class="modal-dialog">\
+									<div class="modal-content">\
+									<div class="modal-header">\
+										<h5 class="modal-title" id="move-modal-label-'+ i + '">移动到...</h5>\
+										<button type="button" class="close" data-dismiss="modal" aria-label="Close">\
+										<span aria-hidden="true">&times;</span>\
+										</button>\
+									</div>\
+									<div class="modal-body">\
+										<input type="text" class="form-control filename" filename="'+ fileList[i].name + '" id="move-filename-' + i + '" value="' + window.location.href.replace(/.+\/app/i, '') + '">\
+									</div>\
+									<div class="modal-footer">\
+										<button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>\
+										<button type="button" class="btn btn-primary file-move" id="file-move-'+ i + '">保存</button>\
+									</div>\
+									</div>\
+								</div>\
+								</div>';
+						str += '<div class="modal fade rename-modal" id="modal-rename-' + i + '" tabindex="-1" aria-labelledby="rename-modal-label-' + i + '" aria-hidden="true">\
+  								<div class="modal-dialog">\
+									<div class="modal-content">\
+									<div class="modal-header">\
+										<h5 class="modal-title" id="rename-modal-label-'+ i + '">重命名</h5>\
 										<button type="button" class="close" data-dismiss="modal" aria-label="Close">\
 										<span aria-hidden="true">&times;</span>\
 										</button>\
@@ -189,19 +229,16 @@
 									</div>\
 									<div class="modal-footer">\
 										<button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>\
-										<button type="button" class="btn btn-primary file-rename" id="file-rename'+ i + '">保存</button>\
+										<button type="button" class="btn btn-primary file-rename" id="file-rename-'+ i + '">保存</button>\
 									</div>\
 									</div>\
 								</div>\
-								</div>\
-								<button class="btn btn-danger file-delete"\ filename="'+ fileList[i].name + '" id="file-delete-' + i + '">\
-								<i class="fas fa-trash" aria-hidden="true"></i>\
-								</button></div>'
-
-						str += '</div>';
+								</div>';
+						str += '</div></div>';
 						$('#file-group').append(str);
 					}
 					addMyEvent(fileList.length);
+					if (empty) emptySuccessAlert();
 				},
 				error: function (err) {
 					console.log('获取最新目录失败，请稍后重试。', err);
@@ -226,21 +263,22 @@
 			$.ajax({
 				url: window.location.href.replace('/app', '/api/folder/new', 1),
 				type: 'POST',
-				data: JSON.stringify({ dst: $(this).parent().siblings('.modal-body').children('input').val() }),
+				data: JSON.stringify({ dst: $('#add-folder-body').val() }),
 				cache: false,
 				processData: false,
 				contentType: false,
 				success: function (data) {
 					console.log(data);
 					addSuccessAlert(data, true);
-					setTimeout(refresh(), 2000);
+					setTimeout(refresh(false), 2000);
 				},
 				error: function (err) {
 					console.error(err);
 					addSuccessAlert(err, false);
-					setTimeout(refresh(), 2000);
+					setTimeout(refresh(false), 2000);
 				}
 			});
+			$('#add-folder-body').val('');
 			$(this).parents('.modal').modal('hide')
 		});
 
@@ -261,13 +299,14 @@
 					contentType: false,
 					success: function (data) {
 						addSuccessAlert(data, true);
-						setTimeout(refresh(), 2000);
+						setTimeout(refresh(false), 2000);
 					},
 					error: function (err) {
 						console.error(err);
 						addSuccessAlert(err, false);
 					}
 				});
+				$('#file').empty();
 				$(this).parents('.modal').modal('hide')
 			}
 		});
@@ -275,11 +314,65 @@
 	<script>
 		function addMyEvent(len) {
 			for (i = 0; i < len; i++) {
-				$('#rename-modal-button-' + i).on('click', function () {
-					console.log($('#modal' + i))
-					$('#modal' + i).modal('show')
+				$('#copy-modal-button-' + i).on('click', function () {
+					console.log($(this).siblings('.copy-modal'))
+					$(this).siblings('.copy-modal').modal('show')
 				});
-				$('#file-rename' + i).click(function () {
+				$('#move-modal-button-' + i).on('click', function () {
+					console.log($(this).siblings('.move-modal'))
+					$(this).siblings('.move-modal').modal('show')
+				});
+				$('#rename-modal-button-' + i).on('click', function () {
+					console.log($(this).siblings('.rename-modal'))
+					$(this).siblings('.rename-modal').modal('show')
+				});
+				$('#file-copy-' + i).click(function () {
+					console.log('src:' + $(this).parent().siblings('.modal-body').children('input').attr('filename'))
+					console.log('dst:' + $(this).parent().siblings('.modal-body').children('input').val())
+					$.ajax({
+						url: window.location.href.replace(/\/app\/?/i, '/api/file/copy', 1) + '/' + $(this).parent().siblings('.modal-body').children('input').attr('filename'),
+						type: 'PUT',
+						data: JSON.stringify({
+							dst: $(this).parent().siblings('.modal-body').children('input').val()
+						}),
+						cache: false,
+						processData: false,
+						contentType: false,
+						success: function (data) {
+							addSuccessAlert(data, true);
+							setTimeout(refresh(false), 2000);
+						},
+						error: function (err) {
+							console.error(err);
+							addSuccessAlert(err, false);
+						}
+					});
+					$(this).parents('.modal').modal('hide')
+				});
+				$('#file-move-' + i).click(function () {
+					console.log('src:' + $(this).parent().siblings('.modal-body').children('input').attr('filename'))
+					console.log('dst:' + $(this).parent().siblings('.modal-body').children('input').val())
+					$.ajax({
+						url: window.location.href.replace(/\/app\/?/i, '/api/file/move', 1) + '/' + $(this).parent().siblings('.modal-body').children('input').attr('filename'),
+						type: 'PUT',
+						data: JSON.stringify({
+							dst: $(this).parent().siblings('.modal-body').children('input').val()
+						}),
+						cache: false,
+						processData: false,
+						contentType: false,
+						success: function (data) {
+							addSuccessAlert(data, true);
+							setTimeout(refresh(false), 2000);
+						},
+						error: function (err) {
+							console.error(err);
+							addSuccessAlert(err, false);
+						}
+					});
+					$(this).parents('.modal').modal('hide')
+				});
+				$('#file-rename-' + i).click(function () {
 					console.log('src:' + $(this).parent().siblings('.modal-body').children('input').attr('filename'))
 					console.log('dst:' + $(this).parent().siblings('.modal-body').children('input').val())
 					$.ajax({
@@ -293,19 +386,16 @@
 						processData: false,
 						contentType: false,
 						success: function (data) {
-							console.log(data);
-							$("#result").text(JSON.stringify(data).replace(/\\[^\\]/g, '')).addClass("alert-success").removeClass("alert-danger");
-							setTimeout(refresh(), 2000);
+							addSuccessAlert(data, true);
+							setTimeout(refresh(false), 2000);
 						},
 						error: function (err) {
 							console.error(err);
-							$("#result").html(err.responseText).removeClass("alert-success").addClass("alert-danger");
-							setTimeout(refresh(), 2000);
+							addSuccessAlert(err, false);
 						}
 					});
 					$(this).parents('.modal').modal('hide')
 				});
-
 				$('#file-delete-' + i).click(function () {
 					filename = $(this).attr('filename')
 					$.confirm({
@@ -326,7 +416,7 @@
 										success: function (data) {
 											console.log(data);
 											addSuccessAlert(data, true);
-											refresh();
+											refresh(false);
 										},
 										error: function (err) {
 											console.error(err);

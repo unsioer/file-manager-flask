@@ -5,10 +5,12 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1.0, minimum-scale=1.0">
 	<title>Hence File Manager</title>
-	<link id="favicon" rel="shortcut icon" type="image/x-icon" href="/static/icon/favicon.ico" />
+	<!--link id="favicon" rel="shortcut icon" type="image/x-icon" href="/static/icon/favicon.ico" /-->
 	<link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 	<link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/5.15.2/css/all.css" rel="stylesheet">
+	<link href="https://cdn.bootcdn.net/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.css" rel="stylesheet">
 	<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script src="https://cdn.bootcdn.net/ajax/libs/jquery-confirm/3.3.4/jquery-confirm.min.js"></script>
 	<script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.2/js/bootstrap.min.js"></script>
 	<style>
 		/*.fas {
@@ -35,24 +37,70 @@
 
 	<div class="jumbotron jumbotron-fluid">
 		<div class="container">
-			<form method="post">
-				<input type="file" id="file">
-				<button class="btn btn-primary" id="file-submit" type="button">保存</button>
-				<div class="alert" role="alert" id="result"></div>
-			</form>
-
-			<button class="btn" id="refresh" onclick="refresh()"><i class="fas fa-sync" aria-hidden="true"></i></button>
-			<div class="toolbar">
-			</div>
+			<div class="alert" role="alert" id="result"></div>
 			<nav>
 				<ol class="breadcrumb">
 					<li class="breadcrumb-item active" aria-current="page">
-						<a href="/app" title="根目录">
-							<i class="fas fa-folder"></i>
+						<a class="btn" href="/app" title="根目录">
+							<i class="fas fa-folder"></i><b></b>
 						</a>
+					</li>
+					<li>
+						<button class="btn" id="refresh" onclick="refresh()" title="刷新"><i class="fas fa-sync"
+								aria-hidden="true"></i></button>
+					</li>
+					<li>
+						<button class="btn" id="add-folder-modal-button" title="新建文件夹"><i class="fas fa-plus"
+								aria-hidden="true"></i></button>
+					</li>
+					<li>
+						<button class="btn" id="upload-modal-button" title="上传"><i class="fas fa-upload"
+								aria-hidden="true"></i></button>
 					</li>
 				</ol>
 			</nav>
+			<div class="modal fade" id="modal-add-folder" tabindex="-1" aria-labelledby="modal-add-folder-label"
+				aria-hidden="true">
+				<div class="modal-dialog">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h5 class="modal-title" id="modal-add-folder-label">新建文件夹</h5>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true">&times;</span>
+							</button>
+						</div>
+						<div class="modal-body">
+							<input type="text" class="form-control" id="add-folder-body" value="">
+						</div>
+						<div class="modal-footer">
+							<button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+							<button type="button" class="btn btn-primary" id="add-folder">保存</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<form method="post">
+				<div class="modal fade" id="modal-upload" tabindex="-1" aria-labelledby="modal-upload-label"
+					aria-hidden="true">
+					<div class="modal-dialog">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title" id="modal-upload-label">上传文件</h5>
+								<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+									<span aria-hidden="true">&times;</span>
+								</button>
+							</div>
+							<div class="modal-body">
+								<input type="file" id="file"></input>
+							</div>
+							<div class="modal-footer">
+								<button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+								<button type="button" class="btn btn-primary" id="file-submit">保存</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</form>
 			<div>
 				<div class="col-12 row">
 					<div class="file-item col-4">
@@ -74,10 +122,14 @@
 	</footer>
 	<script type="text/javascript">
 		function processFather() {
-			$("#father").attr("href", window.location.href.replace(/(.+)\/.+/g, '$1', 1));
+			if (window.location.href.endsWith('app/')) {
+				$("#father").parent().hide();
+			}
+			else {
+				$("#father").attr("href", window.location.href.replace(/(.+)\/.+/g, '$1', 1));
+			}
 		}
 		function fixFileSize(size) {
-
 			if (size === '') return '';
 			if (size > 1024) {
 				if (size > 1024 * 1024) {
@@ -87,11 +139,18 @@
 				}
 				else return Number(size / (1024)).toFixed(2) + 'K';
 			} else return size + 'B';
-
+		}
+		function addSuccessAlert(data, state) {
+			if (state == true) {
+				$("#result").text(JSON.stringify(data).replace(/\\[^\\]/g, '')).addClass("alert-success").removeClass("alert-danger");
+			}
+			else {
+				$("#result").html(data.responseText).removeClass("alert-success").addClass("alert-danger");
+			}
 		}
 		function refresh() {
 			$.ajax({
-				url: window.location.href.replace('/app', '/api/folder', 1),
+				url: window.location.href.replace('/app', '/api/folder/basic', 1),
 				type: 'get',
 				cache: false,
 				processData: false,
@@ -114,28 +173,28 @@
 						str += '</div>';
 						str += '<div class="file-modified-time col-4">' + fileList[i].mtime + '</div>\
 							<div class="file float-right col-2">\
-								<button type="button" class="btn btn-primary" id="modalButton'+i+'" data-toggle="modal" data-target="#modal' + i + '">\
+								<button type="button" class="btn btn-primary" id="rename-modal-button-'+ i + '" data-toggle="modal" data-target="#modal' + i + '">\
 								<i class="fas fa-pen" aria-hidden="true"></i></button>\
-								<div class="modal fade" id="modal'+ i +'" tabindex="-1" aria-labelledby="modalLabel'+ i +'" aria-hidden="true">\
+								<div class="modal fade" id="modal'+ i + '" tabindex="-1" aria-labelledby="modalLabel' + i + '" aria-hidden="true">\
   								<div class="modal-dialog">\
 									<div class="modal-content">\
 									<div class="modal-header">\
-										<h5 class="modal-title" id="modalLabel'+ i +'">Rename</h5>\
+										<h5 class="modal-title" id="modalLabel'+ i + '">重命名</h5>\
 										<button type="button" class="close" data-dismiss="modal" aria-label="Close">\
 										<span aria-hidden="true">&times;</span>\
 										</button>\
 									</div>\
 									<div class="modal-body">\
-										<input type="text" class="form-control" filename="'+ fileList[i].name + '" id="filename'+i+'" value="'+fileList[i].name +'">\
+										<input type="text" class="form-control filename" filename="'+ fileList[i].name + '" id="filename' + i + '" value="' + fileList[i].name + '">\
 									</div>\
 									<div class="modal-footer">\
-										<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>\
-										<button type="button" class="btn btn-primary file-rename" id="file-rename'+i+'" filename="'+ fileList[i].name + '" >Save changes</button>\
+										<button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>\
+										<button type="button" class="btn btn-primary file-rename" id="file-rename'+ i + '">保存</button>\
 									</div>\
 									</div>\
 								</div>\
 								</div>\
-								<button class="btn btn-danger file-delete"\ filename="'+ fileList[i].name + '">\
+								<button class="btn btn-danger file-delete"\ filename="'+ fileList[i].name + '" id="file-delete-' + i + '">\
 								<i class="fas fa-trash" aria-hidden="true"></i>\
 								</button></div>'
 
@@ -153,9 +212,37 @@
 		$(document).ready(function () {
 			processFather();
 			refresh();
-			//setInterval("refresh()",1000)
 		});
 
+		$('#add-folder-modal-button').click(function () {
+			$('#modal-add-folder').modal('show')
+		});
+
+		$('#upload-modal-button').click(function () {
+			$('#modal-upload').modal('show')
+		});
+
+		$('#add-folder').click(function () {
+			$.ajax({
+				url: window.location.href.replace('/app', '/api/folder/new', 1),
+				type: 'POST',
+				data: JSON.stringify({ dst: $(this).parent().siblings('.modal-body').children('input').val() }),
+				cache: false,
+				processData: false,
+				contentType: false,
+				success: function (data) {
+					console.log(data);
+					addSuccessAlert(data, true);
+					setTimeout(refresh(), 2000);
+				},
+				error: function (err) {
+					console.error(err);
+					addSuccessAlert(err, false);
+					setTimeout(refresh(), 2000);
+				}
+			});
+			$(this).parents('.modal').modal('hide')
+		});
 
 		$('#file-submit').click(function () {
 			if ($('#file').prop('files')[0] == null) {
@@ -166,79 +253,94 @@
 				var data = new FormData();
 				data.append('file', files[0]);
 				$.ajax({
-					url: window.location.href.replace('/app', '/api/folder', 1),
+					url: window.location.href.replace('/app', '/api/folder/basic', 1),
 					type: 'POST',
 					data: data,
 					cache: false,
 					processData: false,
 					contentType: false,
 					success: function (data) {
-						console.log(data);
-						refresh();
+						addSuccessAlert(data, true);
+						setTimeout(refresh(), 2000);
 					},
 					error: function (err) {
 						console.error(err);
-						$("#result").html(err.responseText).removeClass("alert-success").addClass("alert-danger");
+						addSuccessAlert(err, false);
 					}
 				});
+				$(this).parents('.modal').modal('hide')
 			}
 		});
-
+	</script>
+	<script>
 		function addMyEvent(len) {
-			for (i=0;i<len;i++)
-			{
-				$('#modalButton'+ i).on('click', function () {
-					console.log($('#modal'+i))
-  					$('#modal'+i).modal('show')
-				})
-				$('#file-rename'+i).click(function () {
-					
-					console.log('src:'+$(this).attr('filename'))
-					console.log('dst:'+$('#filename').val())
+			for (i = 0; i < len; i++) {
+				$('#rename-modal-button-' + i).on('click', function () {
+					console.log($('#modal' + i))
+					$('#modal' + i).modal('show')
+				});
+				$('#file-rename' + i).click(function () {
+					console.log('src:' + $(this).parent().siblings('.modal-body').children('input').attr('filename'))
+					console.log('dst:' + $(this).parent().siblings('.modal-body').children('input').val())
 					$.ajax({
-					url: window.location.href.replace('/app', '/api/folder', 1),
-					type: 'PUT',
-					data: JSON.stringify({ src: $(this).attr('filename'),
-						dst: $(this).parent().siblings('.modal-body').children('input').val() }),
-					cache: false,
-					processData: false,
-					contentType: false,
-					success: function (data) {
-						console.log(data);
-						$("#result").text(JSON.stringify(data)).addClass("alert-success").removeClass("alert-danger");
-					},
-					error: function (err) {
-						console.error(err);
-						$("#result").html(err.responseText).removeClass("alert-success").addClass("alert-danger");
-					}
+						url: window.location.href.replace('/app', '/api/folder/basic', 1),
+						type: 'PUT',
+						data: JSON.stringify({
+							src: $(this).parent().siblings('.modal-body').children('input').attr('filename'),
+							dst: $(this).parent().siblings('.modal-body').children('input').val()
+						}),
+						cache: false,
+						processData: false,
+						contentType: false,
+						success: function (data) {
+							console.log(data);
+							$("#result").text(JSON.stringify(data).replace(/\\[^\\]/g, '')).addClass("alert-success").removeClass("alert-danger");
+							setTimeout(refresh(), 2000);
+						},
+						error: function (err) {
+							console.error(err);
+							$("#result").html(err.responseText).removeClass("alert-success").addClass("alert-danger");
+							setTimeout(refresh(), 2000);
+						}
 					});
 					$(this).parents('.modal').modal('hide')
-					refresh()
 				});
-				
 
-			}
-			$('.file-delete').click(function () {
-				console.log('file-delete!')
-				console.log($(this).attr('filename'))
-				$.ajax({
-					url: window.location.href.replace('/app', '/api/folder', 1),
-					type: 'DELETE',
-					data: JSON.stringify({ src: $(this).attr('filename') }),
-					cache: false,
-					processData: false,
-					contentType: false,
-					success: function (data) {
-						console.log(data);
-						$("#result").text(JSON.stringify(data)).addClass("alert-success").removeClass("alert-danger");
-						refresh();
-					},
-					error: function (err) {
-						console.error(err);
-						$("#result").html(err.responseText).removeClass("alert-success").addClass("alert-danger");
-					}
+				$('#file-delete-' + i).click(function () {
+					filename = $(this).attr('filename')
+					$.confirm({
+						title: '删除',
+						content: "确定删除" + filename + "？",
+						buttons: {
+							ok: {
+								action: function () {
+									console.log('file-delete!');
+									console.log(filename)
+									$.ajax({
+										url: window.location.href.replace('/app', '/api/folder/basic', 1),
+										type: 'DELETE',
+										data: JSON.stringify({ src: filename }),
+										cache: false,
+										processData: false,
+										contentType: false,
+										success: function (data) {
+											console.log(data);
+											addSuccessAlert(data, true);
+											refresh();
+										},
+										error: function (err) {
+											console.error(err);
+											addSuccessAlert(err, false);
+										}
+									});
+								}
+							},
+							cancel: {
+							}
+						}
+					});
 				});
-			});
+			}
 		}
 	</script>
 </body>

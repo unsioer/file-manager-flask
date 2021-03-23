@@ -7,7 +7,9 @@
 
 from flask import Flask, request, render_template
 import os
+import re
 import json
+import shutil
 
 from util import *
 
@@ -17,7 +19,7 @@ app = Flask(__name__)
 
 
 # Back-end
-@app.route("/api/folder/<path:folderPath>", methods=['GET'])
+@app.route("/api/folder/basic/<path:folderPath>", methods=['GET'])
 def get(folderPath):
     joinPath = os.path.join(ROOT_DIR, folderPath)
     fileList = listFile(joinPath)
@@ -26,7 +28,7 @@ def get(folderPath):
                       indent=4)
 
 
-@app.route("/api/folder/", methods=['GET'])
+@app.route("/api/folder/basic/", methods=['GET'])
 def getRoot():
     return get('')
 
@@ -40,7 +42,7 @@ def checkFileExist(filePath):
         return json.dumps({"status": 404})
 
 
-@app.route("/api/folder/<path:folderPath>", methods=['POST'])
+@app.route("/api/folder/basic/<path:folderPath>", methods=['POST'])
 def upload(folderPath):
     joinPath = os.path.join(ROOT_DIR, folderPath)
     # TODO: os.path.exists
@@ -50,12 +52,12 @@ def upload(folderPath):
     return json.dumps({"status": 200})
 
 
-@app.route("/api/folder/", methods=['POST'])
+@app.route("/api/folder/basic/", methods=['POST'])
 def uploadRoot():
     return upload('')
 
 
-@app.route("/api/folder/<path:folderPath>", methods=['PUT'])
+@app.route("/api/folder/basic/<path:folderPath>", methods=['PUT'])
 def rename(folderPath):
     joinPath = os.path.join(ROOT_DIR, folderPath)
     data = json.loads(request.get_data())
@@ -82,12 +84,12 @@ def rename(folderPath):
     return json.dumps({"status": 200})
 
 
-@app.route("/api/folder/", methods=['PUT'])
+@app.route("/api/folder/basic/", methods=['PUT'])
 def renameRoot():
     return rename('')
 
 
-@app.route("/api/folder/<path:folderPath>", methods=['DELETE'])
+@app.route("/api/folder/basic/<path:folderPath>", methods=['DELETE'])
 def delete(folderPath):
     joinPath = os.path.join(ROOT_DIR, folderPath)
     data = json.loads(request.get_data())
@@ -108,9 +110,34 @@ def delete(folderPath):
         return json.dumps({"status": 400, "msg": "Permission refused"})
 
 
-@app.route("/api/folder/", methods=['DELETE'])
+@app.route("/api/folder/basic/", methods=['DELETE'])
 def deleteRoot():
     return delete('')
+
+
+@app.route("/api/folder/new/<path:folderPath>", methods=['POST'])
+def mkdir(folderPath):
+    joinPath = os.path.join(ROOT_DIR, folderPath)
+    data = json.loads(request.get_data())
+    if data == None:
+        return json.dumps({"status": 400, "msg": "No data given"})
+    print(data)
+    dst = data.get('dst')
+    if dst == None:
+        return json.dumps({"status": 400, "msg": "No folder name given"})
+    if re.search('[\\\/:\?<>\.\*]',dst):
+        return json.dumps({"status": 403, "msg": "Illegal folder name"})
+    fullPath = os.path.join(joinPath, dst)
+    if not os.path.exists(fullPath):
+        os.makedirs(fullPath)
+        return json.dumps({"status": 200})
+    else:
+        return json.dumps({"status": 400, "msg": "Destination folder exists"})
+
+
+@app.route("/api/folder/new/", methods=['POST'])
+def mkdirRoot():
+    return mkdir('')
 
 
 # Front-end
@@ -125,4 +152,4 @@ def indexRoot():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')

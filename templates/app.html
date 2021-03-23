@@ -43,9 +43,6 @@
 						<button class="btn" id="upload-modal-button" title="上传"><i class="fas fa-file-upload"
 								aria-hidden="true"></i></button>
 					</li>
-					<li>
-
-					</li>
 				</ol>
 			</nav>
 			<div class="modal fade" id="modal-add-folder" tabindex="-1" aria-labelledby="modal-add-folder-label"
@@ -330,7 +327,7 @@
 					console.log('src:' + $(this).parent().siblings('.modal-body').children('input').attr('filename'))
 					console.log('dst:' + $(this).parent().siblings('.modal-body').children('input').val())
 					$.ajax({
-						url: window.location.href.replace(/\/app\/?/i, '/api/file/copy', 1) + '/' + $(this).parent().siblings('.modal-body').children('input').attr('filename'),
+						url: window.location.href.replace(/\/app\/?/i, '/api/file/copy/', 1).replace(/(.+)\/$/i, '$1') + '/' + $(this).parent().siblings('.modal-body').children('input').attr('filename'),
 						type: 'PUT',
 						data: JSON.stringify({
 							dst: $(this).parent().siblings('.modal-body').children('input').val()
@@ -353,7 +350,7 @@
 					console.log('src:' + $(this).parent().siblings('.modal-body').children('input').attr('filename'))
 					console.log('dst:' + $(this).parent().siblings('.modal-body').children('input').val())
 					$.ajax({
-						url: window.location.href.replace(/\/app\/?/i, '/api/file/move', 1) + '/' + $(this).parent().siblings('.modal-body').children('input').attr('filename'),
+						url: window.location.href.replace(/\/app\/?/i, '/api/file/move/', 1).replace(/(.+)\/$/i, '$1') + '/' + $(this).parent().siblings('.modal-body').children('input').attr('filename'),
 						type: 'PUT',
 						data: JSON.stringify({
 							dst: $(this).parent().siblings('.modal-body').children('input').val()

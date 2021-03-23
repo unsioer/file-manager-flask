@@ -141,7 +141,7 @@ def mkdirRoot():
 
 @app.route("/api/file/copy/<path:filePath>", methods=['PUT'])
 def copy(filePath):
-    fullPath = os.path.join(ROOT_DIR, filePath)
+    fullPath = os.path.join(ROOT_DIR, filePath).replace('\\', '/')
     if not os.path.exists(fullPath):
         return json.dumps({"status": 404, "msg": "File not found"})
     data = json.loads(request.get_data())
@@ -157,7 +157,8 @@ def copy(filePath):
         dst = dst[1:]
     if re.search('[:\?<>\.\*]', dst):
         return json.dumps({"status": 403, "msg": "Illegal folder name"})
-    dstPath = os.path.join(ROOT_DIR, dst, filePath)
+    dstPath = os.path.join(ROOT_DIR, dst,
+                           os.path.split(filePath)[-1]).replace('\\', '/')
     print(fullPath, dstPath)
     dstPath = nameConflict(dstPath)
     print(fullPath, dstPath)
@@ -171,7 +172,7 @@ def copy(filePath):
 
 @app.route("/api/file/move/<path:filePath>", methods=['PUT'])
 def move(filePath):
-    fullPath = os.path.join(ROOT_DIR, filePath)
+    fullPath = os.path.join(ROOT_DIR, filePath).replace('\\', '/')
     if not os.path.exists(fullPath):
         return json.dumps({"status": 404, "msg": "File not found"})
     data = json.loads(request.get_data())
@@ -187,8 +188,11 @@ def move(filePath):
         dst = dst[1:]
     if re.search('[:\?<>\.\*]', dst):
         return json.dumps({"status": 403, "msg": "Illegal folder name"})
-    dstPath = os.path.join(ROOT_DIR, dst, filePath)
+    dstPath = os.path.join(ROOT_DIR, dst,
+                           os.path.split(filePath)[-1]).replace('\\', '/')
     print(fullPath, dstPath)
+    if fullPath == dstPath:
+        return json.dumps({"status": 200})
     dstPath = nameConflict(dstPath)
     print(fullPath, dstPath)
     try:

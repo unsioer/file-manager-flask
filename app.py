@@ -3,6 +3,7 @@
 # - Normalize api
 
 from flask import Flask, request, render_template
+from flask_cors import *
 import os
 import re
 import json
@@ -11,12 +12,14 @@ import shutil
 from util import *
 
 app = Flask(__name__)
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 #app.url_map.converters['regex'] = RegexConverter
 
 
 # Back-end
 @app.route("/api/folder/basic/<path:folderPath>", methods=['GET'])
+@cross_origin()
 def get(folderPath):
     joinPath = os.path.join(ROOT_DIR, folderPath)
     fileList = listFile(joinPath)
@@ -26,11 +29,13 @@ def get(folderPath):
 
 
 @app.route("/api/folder/basic/", methods=['GET'])
+@cross_origin()
 def getRoot():
     return get('')
 
 
 @app.route('/api/file/check/<path:filePath>', methods=['GET'])
+@cross_origin()
 def checkFileExist(filePath):
     joinPath = os.path.join(ROOT_DIR, filePath)
     if os.path.exists(joinPath):
@@ -40,6 +45,7 @@ def checkFileExist(filePath):
 
 
 @app.route("/api/folder/basic/<path:folderPath>", methods=['POST'])
+@cross_origin()
 def upload(folderPath):
     joinPath = os.path.join(ROOT_DIR, folderPath)
     # TODO: os.path.exists
@@ -52,11 +58,13 @@ def upload(folderPath):
 
 
 @app.route("/api/folder/basic/", methods=['POST'])
+@cross_origin()
 def uploadRoot():
     return upload('')
 
 
 @app.route("/api/folder/basic/<path:folderPath>", methods=['PUT'])
+@cross_origin()
 def rename(folderPath):
     joinPath = os.path.join(ROOT_DIR, folderPath)
     data = json.loads(request.get_data())
@@ -84,11 +92,13 @@ def rename(folderPath):
 
 
 @app.route("/api/folder/basic/", methods=['PUT'])
+@cross_origin()
 def renameRoot():
     return rename('')
 
 
 @app.route("/api/folder/basic/<path:folderPath>", methods=['DELETE'])
+@cross_origin()
 def delete(folderPath):
     joinPath = os.path.join(ROOT_DIR, folderPath)
     data = json.loads(request.get_data())
@@ -110,11 +120,13 @@ def delete(folderPath):
 
 
 @app.route("/api/folder/basic/", methods=['DELETE'])
+@cross_origin()
 def deleteRoot():
     return delete('')
 
 
 @app.route("/api/folder/new/<path:folderPath>", methods=['POST'])
+@cross_origin()
 def mkdir(folderPath):
     joinPath = os.path.join(ROOT_DIR, folderPath)
     data = json.loads(request.get_data())
@@ -135,11 +147,13 @@ def mkdir(folderPath):
 
 
 @app.route("/api/folder/new/", methods=['POST'])
+@cross_origin()
 def mkdirRoot():
     return mkdir('')
 
 
 @app.route("/api/file/copy/<path:filePath>", methods=['PUT'])
+@cross_origin()
 def copy(filePath):
     fullPath = os.path.join(ROOT_DIR, filePath).replace('\\', '/')
     if not os.path.exists(fullPath):
@@ -163,6 +177,8 @@ def copy(filePath):
     dstPath = nameConflict(dstPath)
     print(fullPath, dstPath)
     try:
+        if not os.path.exists(os.path.join(ROOT_DIR, dst)):
+            os.makedirs(os.path.join(ROOT_DIR, dst))
         if os.path.isdir(fullPath): shutil.copytree(fullPath, dstPath)
         else: shutil.copy2(fullPath, dstPath)
         return json.dumps({"status": 200})
@@ -171,6 +187,7 @@ def copy(filePath):
 
 
 @app.route("/api/file/move/<path:filePath>", methods=['PUT'])
+@cross_origin()
 def move(filePath):
     fullPath = os.path.join(ROOT_DIR, filePath).replace('\\', '/')
     if not os.path.exists(fullPath):

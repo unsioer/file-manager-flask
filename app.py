@@ -76,6 +76,8 @@ def rename(folderPath):
             "status": 400,
             "msg": "No source file or destination file given"
         })
+    if re.search('[\\\/:\?<>\*]', dst):
+        return json.dumps({"status": 403, "msg": "Illegal file or folder name"})
     srcPath = os.path.join(joinPath, src)
     dstPath = os.path.join(joinPath, dst)
     if not os.path.exists(srcPath):
@@ -135,7 +137,7 @@ def mkdir(folderPath):
     dst = data.get('dst')
     if dst == None:
         return json.dumps({"status": 400, "msg": "No folder name given"})
-    if re.search('[\\\/:\?<>\.\*]', dst):
+    if re.search('[\\\/:\?<>\*]', dst):
         return json.dumps({"status": 403, "msg": "Illegal folder name"})
     fullPath = os.path.join(joinPath, dst)
     if not os.path.exists(fullPath):
@@ -168,8 +170,8 @@ def copy(filePath):
         })
     if dst[0] == '/':
         dst = dst[1:]
-    if re.search('[:\?<>\.\*]', dst):
-        return json.dumps({"status": 403, "msg": "Illegal folder name"})
+    if re.search('[:\?<>\*]', dst):
+        return json.dumps({"status": 403, "msg": "Illegal path"})
     dstPath = os.path.join(ROOT_DIR, dst,
                            os.path.split(filePath)[-1]).replace('\\', '/')
     print(fullPath, dstPath)
@@ -202,8 +204,8 @@ def move(filePath):
         })
     if dst[0] == '/':
         dst = dst[1:]
-    if re.search('[:\?<>\.\*]', dst):
-        return json.dumps({"status": 403, "msg": "Illegal folder name"})
+    if re.search('[:\?<>\*]', dst):
+        return json.dumps({"status": 403, "msg": "Illegal path"})
     dstPath = os.path.join(ROOT_DIR, dst,
                            os.path.split(filePath)[-1]).replace('\\', '/')
     print(fullPath, dstPath)

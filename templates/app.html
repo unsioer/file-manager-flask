@@ -204,7 +204,7 @@
 										</button>\
 									</div>\
 									<div class="modal-body">\
-										<input type="text" class="form-control filename" filename="'+ fileList[i].name + '" id="move-filename-' + i + '" value="' + window.location.href.replace(/.+\/app/i, '') + '">\
+										<input type="text" class="form-control filename" filename="'+ fileList[i].name + '" id="move-filename-' + i + '" value="' + decodeURIComponent(window.location.href.replace(/.+\/app/i, '')) + '">\
 									</div>\
 									<div class="modal-footer">\
 										<button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>\

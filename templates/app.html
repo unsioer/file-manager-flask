@@ -259,7 +259,6 @@
 
 		$('#add-folder').click(function () {
 			$(this).parents('.modal').modal('hide')
-			$('#add-folder-body').val('');
 			$.ajax({
 				url: window.location.href{% if host_link %}.replace(/(https?:\/\/)?[^\/]+(\/.+)/i,'{{ host_link }}$2',1){% endif %}.replace('/app', '/api/folder/new', 1),
 				type: 'POST',
@@ -278,6 +277,7 @@
 					setTimeout(function() {refresh(false)}, 2000);
 				}
 			});
+			$('#add-folder-body').val('');
 		});
 
 		$('#file-submit').click(function () {

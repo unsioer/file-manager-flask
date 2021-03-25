@@ -48,7 +48,6 @@ def checkFileExist(filePath):
 @cross_origin()
 def upload(folderPath):
     joinPath = os.path.join(ROOT_DIR, folderPath)
-    # TODO: os.path.exists
     file = request.files['file']
     fullPath = os.path.join(joinPath, file.filename)
     if os.path.exists(fullPath):
